@@ -4,7 +4,8 @@ import zmq
 import base64
 import numpy as np
 import HandTracking as htm
-
+import ctypes 
+from ordered_set import OrderedSet
 
 context = zmq.Context()
 socket = context.socket(zmq.SUB)
@@ -20,6 +21,16 @@ pTime = 0
 detector = htm.handDetector(detectionCon=0.85)
 
 tipIds = [4, 8, 12, 16, 20]
+
+gestures = {
+        'fist': 0,
+        'hello': 0,
+        'ok': 0,
+        'rock': 0,
+        'like': 0
+
+}
+filteredGestures = OrderedSet()
 
 while True:
     image_string = socket.recv_string()
@@ -46,21 +57,34 @@ while True:
             else:
                 fingers.append(0)
 
-        print(fingers)
         totalFingers = fingers.count(1)
         if(totalFingers == 0):
-            print("Fist")
-            #print(fingers)
+            gestures['fist'] += 1
+            if gestures['fist'] >= 50:
+                filteredGestures.add('fist')
         if(totalFingers == 5):
-            print("Hello")
-            #print(fingers)
-        if (fingers == [0, 0, 1, 1, 1] or fingers == [1, 0, 1, 1, 1]):
-            print("Ok")
+            gestures['hello'] += 1
+            if gestures['hello'] >= 50:
+                filteredGestures.add('hello')
+        if (fingers == [1, 0, 1, 1, 1]):
+            gestures['ok'] += 1
+            if gestures['ok'] >= 50:
+                filteredGestures.add('ok')
         if (fingers == [1, 1, 0, 0, 1] or fingers == [0, 1, 0, 0, 1]):
-            print("Е роцк")
+            gestures['rock'] += 1
+            if gestures['rock'] >= 50:
+                filteredGestures.add('rock')
         if(fingers == [0, 0, 0, 1, 1] or fingers == [0, 0, 1, 1, 1]):
-            print("Like")
+            gestures['like'] += 1
+            if gestures['like'] >= 50:
+                filteredGestures.add('like')
 
+    # filteredGestures = list(filter(lambda gesture: gestures[gesture] > 50, gestures))
+    print(filteredGestures)
+
+    if filteredGestures == {'like', 'fist', 'hello'}:
+        ctypes.windll.user32.MessageBoxW(0, "Лампочка гори!", "Действие", 1)
+        exit()
 
     cTime = time.time()
     fps = 1 / (cTime - pTime)
@@ -68,3 +92,4 @@ while True:
 
     cv2.imshow("Image", img)
     cv2.waitKey(1)
+
