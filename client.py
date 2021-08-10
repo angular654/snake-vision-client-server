@@ -4,9 +4,9 @@ import zmq
 import base64
 import numpy as np
 import HandTracking as htm
-import ctypes 
+import ctypes
 from ordered_set import OrderedSet
-
+from Messages import  MessagesController
 context = zmq.Context()
 socket = context.socket(zmq.SUB)
 socket.bind('tcp://*:7777')
@@ -31,7 +31,7 @@ gestures = {
 
 }
 filteredGestures = OrderedSet()
-
+ctrl = MessagesController()
 while True:
     image_string = socket.recv_string()
     raw_image = base64.b64decode(image_string)
@@ -83,7 +83,7 @@ while True:
     print(filteredGestures)
 
     if filteredGestures == {'like', 'fist', 'hello'}:
-        ctypes.windll.user32.MessageBoxW(0, "Лампочка гори!", "Действие", 1)
+        ctrl.push_message(str({"event": "Лампочка гори!", "gestures": filteredGestures}))
         exit()
 
     cTime = time.time()
@@ -92,4 +92,3 @@ while True:
 
     cv2.imshow("Image", img)
     cv2.waitKey(1)
-
