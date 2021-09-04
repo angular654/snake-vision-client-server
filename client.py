@@ -2,11 +2,11 @@ import cv2
 import time
 import zmq
 import base64
+import json
 import numpy as np
 import HandTracking as htm
-import ctypes
 from ordered_set import OrderedSet
-from Messages import  MessagesController
+from Redis import Redis
 context = zmq.Context()
 socket = context.socket(zmq.SUB)
 socket.bind('tcp://*:7777')
@@ -31,7 +31,7 @@ gestures = {
 
 }
 filteredGestures = OrderedSet()
-ctrl = MessagesController()
+ctrl = Redis()
 while True:
     image_string = socket.recv_string()
     raw_image = base64.b64decode(image_string)
@@ -81,10 +81,10 @@ while True:
 
     # filteredGestures = list(filter(lambda gesture: gestures[gesture] > 50, gestures))
     print(filteredGestures)
-
+    #ctrl.send_data(str({"gestures": filteredGestures}))
     if filteredGestures == {'like', 'fist', 'hello'}:
-        ctrl.push_message(str({"event": "Лампочка гори!", "gestures": filteredGestures}))
-        exit()
+        ctrl.send_data(json.dumps({"type": "camera_events", "event": "Лампочка гори!", "gestures": filteredGestures}))
+        # exit()
 
     cTime = time.time()
     fps = 1 / (cTime - pTime)
